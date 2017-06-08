@@ -2,22 +2,11 @@
 #include "tableentry.h"
 #include <string>
 
-Table::Table(string file_name){
-    path = "/home/isshu/QtProjects/Dictionary";
-    path.append("/");
-    path.append(file_name);
-    myfile.open(path, ios_base::app);
-
-    if(myfile.fail()){
-        cout << "Failed to open file" << endl;
-    }
-}
-
 Table::Table(string my_path, string file_name){
     path = my_path;
-    path.append("/");
-    path.append(file_name);
-    myfile.open(path, ios_base::app);
+    file_path = path;
+    file_path.append("/");
+    file_path.append(file_name);
 }
 
 Table::~Table(){
@@ -29,33 +18,25 @@ void Table::set_path(string my_path){
 }
 
 void Table::add_entry(string word, string meaning){
+    myfile.open(file_path, ios_base::app);
     TableEntry entry(word, meaning);
     myfile << entry.get_word() << ";" << entry.get_meaning() << ";\n";
+    myfile.close();
 }
 
 int Table::search(string word){
     string line;
-    ifstream input_file(path);
+    ifstream input_file(file_path);
     int error = 1;
-    
-    input_file >> line;
 
-    /*In order to check eof, input has to be read once*/
-    size_t found = line.find(word);
-    if(found!=string::npos){
-        cout << line << endl;
-        error = 0;
-    }
-
-    /*Loop till end of file is reached*/
-    while(!input_file.eof()){
-        input_file >> line;
-        found = line.find(word);
-        if(found!=string::npos){
+    while(getline(input_file, line)){
+        if(line.find(word)!=string::npos){
             cout << line << endl;
             error = 0;
         }
     }
+
+    input_file.close();
 
     return error;
 }
@@ -63,31 +44,37 @@ int Table::search(string word){
 int Table::remove_entry(string word){
     int error = 1;
     string line;
-    ifstream input_file("/home/isshu/QtProjects/Dictionary/eng_Dict.csv");
-    ofstream output_file("/home/isshu/QtProjects/Dictionary/tmp.csv");
+    string tmp_file_path;
 
-    /*In order to check eof, input has to be read once*/
-    input_file >> line;
-    if(line.compare(0, word.size(), word)!=0){
-        output_file << line << endl;
-    }
+    tmp_file_path = path;
+    tmp_file_path.append("/tmp.csv");
 
-    /*Loop till end of file is reached*/
-    while(!input_file.eof()){
-        input_file >> line;
+    ifstream input_file(file_path);
+    ofstream output_file(tmp_file_path);
+
+    while(getline(input_file, line)){
         if(line.compare(0, word.size(), word)==0){
-            continue;
+            error = 0;
         }
-        output_file << line << endl;
+        else{
+            output_file << line << endl;
+        }
     }
 
-    system("cp /home/isshu/QtProjects/Dictionary/tmp.csv /home/isshu/QtProjects/Dictionary/eng_Dict.csv");
+    if(error==0){
+        system(("cp "+tmp_file_path+" "+file_path).c_str());
+    }
+
+    input_file.close();
+    output_file.close();
+
+    return error;
 }
 
 void Table::sort_table(){
-    system("/home/isshu/QtProjects/Dictionary/sort.sh");
+    system((path+"/sort.sh").c_str());
 }
 
 void Table::create_backup(){
-    system("cp /home/isshu/QtProjects/Dictionary/eng_Dict.csv /home/isshu/QtProjects/Dictionary/backup.csv");
+    system(("cp "+file_path+" "+path+"/backup.csv").c_str());
 }

@@ -9,7 +9,6 @@ using namespace std;
 class Table
 {
 public:
-    Table(string file_name);
     Table(string my_path, string file_name);
     ~Table();
     void set_path(string my_path);
@@ -21,6 +20,7 @@ public:
 
 private:
     string path;
+    string file_path;
     ofstream myfile;
 };
 
